@@ -1,0 +1,10 @@
+# Example configuration file for Graylog Config Checker
+# Copy this file to config.yaml and fill in your actual values
+
+- graylog-dev:
+    host: "https://graylog-dev.example.com"
+    token: "your-api-token-here"
+
+- graylog-prod:
+    host: "https://graylog-prod.example.com"
+    token: "your-api-token-here"

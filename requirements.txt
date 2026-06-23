@@ -1,0 +1,4 @@
+requests
+flatten_json
+pandas
+pyyaml
