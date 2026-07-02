@@ -120,11 +120,14 @@ def main():
     parser.add_argument("--config", required=True, help="Config file (same format as graylog_config_checker.py)")
     parser.add_argument("--streams", type=int, default=8, help="Number of random streams to create")
     parser.add_argument("--users", type=int, default=6, help="Number of random users to create")
+    parser.add_argument("--users-file", default="seeded_users.txt",
+                        help="File to write the created usernames to, one per line (default: seeded_users.txt)")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
     graylog_config = read_config(args.config)
 
+    all_usernames = []
     for graylogs in graylog_config:
         for graylog, values in graylogs.items():
             host, token = values["host"], values["token"]
@@ -135,6 +138,11 @@ def main():
 
             users = create_users(host, token, args.users, args.debug)
             print(f"  {len(users)} users created")
+            all_usernames.extend(name for name, _ in users)
+
+    with open(args.users_file, "w") as f:
+        f.write("\n".join(all_usernames) + "\n")
+    print(f"Usernames written to {args.users_file}")
 
 
 if __name__ == "__main__":

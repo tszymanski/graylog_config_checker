@@ -18,7 +18,9 @@ help:
 	@echo "  1. make setup        Generate secrets and create .env"
 	@echo "  2. make start        Start all containers"
 	@echo "  3. Open http://localhost:9000 in your browser"
-	@echo "     Login: admin / <password from .env GRAYLOG_ROOT_PASSWORD>"
+	@echo "     Login: admin / <random password printed in 'docker compose logs graylog'>"
+	@echo "     (look for: 'Initial configuration is accessible at ... with username"
+	@echo "     'admin' and password ...' -- this is NOT GRAYLOG_ROOT_PASSWORD)"
 	@echo "     Follow the preflight wizard:"
 	@echo "       a) CA is auto-created (or create it in the UI)"
 	@echo "       b) Configure renewal policy -> set Automatic, click Next"
@@ -44,7 +46,8 @@ help:
 	@echo "  make delete-token  Delete the test API token"
 	@echo "  make show-config   Print generated config.yaml"
 	@echo "  make seed          Create random streams and users on local instance"
-	@echo "  make run           Run graylog_config_checker against local instance"
+	@echo "  make run           Run graylog_config_checker and graylog_permission_checker"
+	@echo "                     (against a random user from the last 'make seed')"
 
 setup:
 	@if [ -f $(ENV_FILE) ]; then \
@@ -126,4 +129,11 @@ seed: venv
 
 run: venv
 	@[ -f config.yaml ] || (echo "Run 'make create-token' first"; exit 1)
+	@[ -f seeded_users.txt ] || (echo "Run 'make seed' first to create test users"; exit 1)
+	@echo "--- Testing graylog_config_checker.py ---"
 	cd .. && $(PYTHON) graylog_config_checker.py --config tests/config.yaml --save --debug
+	@echo ""
+	@echo "--- Testing graylog_permission_checker.py ---"
+	@USERNAME=$$($(PYTHON) -c "import random; print(random.choice(open('seeded_users.txt').read().split()))"); \
+	echo "Random seeded user: $$USERNAME"; \
+	cd .. && $(PYTHON) graylog_permission_checker.py --config tests/config.yaml --username $$USERNAME --debug

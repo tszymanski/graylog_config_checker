@@ -2,6 +2,7 @@
 config.yaml
 tests/.env
 tests/config.yaml
+tests/seeded_users.txt
 temp_graylog_env/
 
 # Output files

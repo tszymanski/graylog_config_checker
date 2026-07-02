@@ -206,7 +206,14 @@ make setup        # generates .env with a password secret
 make start         # starts mongodb, datanode, graylog containers
 ```
 
-Open http://localhost:9000 in a browser, log in as `admin` / `admin` (or the password set in `tests/.env`), and complete the preflight wizard (accept the auto-created CA, set the renewal policy to Automatic, wait for DataNode provisioning, click Finish).
+Open http://localhost:9000 in a browser. For this first, *preflight* login, Graylog generates a random admin password and prints it to the container logs on first boot — it is **not** `GRAYLOG_ROOT_PASSWORD` from `tests/.env` (that password only becomes active once setup is complete). Find it with:
+
+```bash
+docker compose -f tests/docker-compose.yml logs graylog | grep "Initial configuration"
+# e.g. "Initial configuration is accessible at 0.0.0.0:9000, with username 'admin' and password 'ijMTqNMhef'."
+```
+
+Log in with `admin` / `<that generated password>` and complete the preflight wizard (accept the auto-created CA, set the renewal policy to Automatic, wait for DataNode provisioning, click Finish). After setup finishes, normal logins use `admin` / `GRAYLOG_ROOT_PASSWORD` from `tests/.env` instead.
 
 ```bash
 make create-token  # waits for the API, creates an API token, writes tests/config.yaml
