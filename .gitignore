@@ -1,5 +1,8 @@
 # Configuration files with sensitive data
 config.yaml
+tests/.env
+tests/config.yaml
+temp_graylog_env/
 
 # Output files
 *.csv

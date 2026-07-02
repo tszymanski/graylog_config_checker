@@ -194,6 +194,58 @@ When using Docker with the mounted output directory (`-v $(pwd)/output:/code/out
 - `output/permissions-<username>-<graylog>.json` - User permissions in JSON format
 - `output/permissions-<username>-<graylog>.csv` - User permissions in CSV format
 
+## Local Test Environment
+
+The `tests/` directory contains a self-contained Graylog stack (MongoDB, DataNode, Graylog) run via Docker Compose, along with a Makefile that automates setup and seeding. It's meant for trying out these scripts against a real Graylog API without touching a shared/production instance.
+
+### First-time setup
+
+```bash
+cd tests
+make setup        # generates .env with a password secret
+make start         # starts mongodb, datanode, graylog containers
+```
+
+Open http://localhost:9000 in a browser, log in as `admin` / `admin` (or the password set in `tests/.env`), and complete the preflight wizard (accept the auto-created CA, set the renewal policy to Automatic, wait for DataNode provisioning, click Finish).
+
+```bash
+make create-token  # waits for the API, creates an API token, writes tests/config.yaml
+make seed          # creates random streams and users for testing
+make run           # runs graylog_config_checker.py against the local instance
+```
+
+### Subsequent runs
+
+Container volumes persist, so the preflight wizard only needs to be done once:
+
+```bash
+cd tests
+make start
+make stop
+```
+
+### Commands
+
+```
+make venv          Create Python virtual environment (tests/.venv)
+make setup         Generate secrets and create .env
+make sysctl        Set vm.max_map_count=262144 (requires sudo, needed by DataNode)
+make start         Start all containers
+make stop          Stop all containers
+make restart       Restart all containers
+make clean         Stop containers and remove volumes (resets all state)
+make wait          Wait until the Graylog API is ready (post-preflight)
+make create-token  Create API token and write tests/config.yaml
+make delete-token  Delete the test API token
+make show-config   Print generated tests/config.yaml
+make seed          Create random streams and users on the local instance
+make run           Run graylog_config_checker.py against the local instance
+```
+
+`make seed` (`tests/seed_data.py`) populates the instance with randomly named streams and users assigned a mix of built-in roles (`Reader`, `Views Manager`, `Alerts Manager`, `Dashboard Creator`, `Admin`), so both scripts have realistic, varied data to read.
+
+`tests/.env` and `tests/config.yaml` contain generated secrets/tokens and are gitignored — never commit them.
+
 ## Author
 
 **Tomasz Szymanski**
