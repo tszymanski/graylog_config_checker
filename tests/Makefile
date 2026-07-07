@@ -4,12 +4,13 @@ ENV_FILE       := .env
 TOKEN_NAME     := test-token
 VENV           := $(abspath ../.venv)
 PYTHON         := $(VENV)/bin/python
+IMAGE          := graylog_config_checker:latest
 
 # Load .env if it exists (for GRAYLOG_ROOT_PASSWORD)
 -include $(ENV_FILE)
 GRAYLOG_ROOT_PASSWORD ?= admin
 
-.PHONY: help setup sysctl venv start stop restart clean wait create-token delete-token show-config run seed
+.PHONY: help setup sysctl venv start stop restart clean wait create-token delete-token show-config run seed build-image run-image
 
 help:
 	@echo "Graylog test environment"
@@ -48,6 +49,9 @@ help:
 	@echo "  make seed          Create random streams and users on local instance"
 	@echo "  make run           Run graylog_config_checker and graylog_permission_checker"
 	@echo "                     (against a random user from the last 'make seed')"
+	@echo "  make build-image   Build the Docker image ($(IMAGE))"
+	@echo "  make run-image     Run both checkers from the Docker image against the"
+	@echo "                     local stack (same as 'make run' but containerized)"
 
 setup:
 	@if [ -f $(ENV_FILE) ]; then \
@@ -137,3 +141,26 @@ run: venv
 	@USERNAME=$$($(PYTHON) -c "import random; print(random.choice(open('seeded_users.txt').read().split()))"); \
 	echo "Random seeded user: $$USERNAME"; \
 	cd .. && $(PYTHON) graylog_permission_checker.py --config tests/config.yaml --username $$USERNAME --debug
+
+build-image:
+	docker build --no-cache=true \
+		--build-arg BUILD_DATE=$$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+		-t $(IMAGE) ..
+
+# Run the checkers from the Docker image instead of the local .venv.
+# --network host lets the container reach Graylog on the host's localhost:9000
+# (Linux only; on Docker Desktop use host.docker.internal in config.yaml).
+# tests/ is mounted at /data so the image finds config.yaml and writes --save CSVs back.
+run-image:
+	@[ -f config.yaml ] || (echo "Run 'make create-token' first"; exit 1)
+	@[ -f seeded_users.txt ] || (echo "Run 'make seed' first to create test users"; exit 1)
+	@echo "--- Testing graylog_config_checker.py (container) ---"
+	docker run --rm --network host -v "$(CURDIR):/data" -w /data \
+		$(IMAGE) --config /data/config.yaml --save --debug
+	@echo ""
+	@echo "--- Testing graylog_permission_checker.py (container) ---"
+	@USERNAME=$$(shuf -n1 seeded_users.txt); \
+	echo "Random seeded user: $$USERNAME"; \
+	docker run --rm --network host -v "$(CURDIR):/data" -w /data \
+		--entrypoint /code/graylog_permission_checker.py \
+		$(IMAGE) --config /data/config.yaml --username $$USERNAME --debug
