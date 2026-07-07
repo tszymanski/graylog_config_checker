@@ -1,4 +1,4 @@
-FROM python:alpine3.19
+FROM python:alpine3.24
 
 LABEL maintainer="tomasz.szymanski@greenit.com.pl"
 ARG BUILD_DATE
