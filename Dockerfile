@@ -4,10 +4,10 @@ LABEL maintainer="tomasz.szymanski@greenit.com.pl"
 ARG BUILD_DATE
 
 RUN mkdir /code
-COPY graylog_config_checker.py graylog_permission_checker.py requirements.txt /code/.
+COPY graylog_config_checker.py graylog_permission_checker.py requirements.txt /code/
 WORKDIR /code
 
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 ENTRYPOINT ["/code/graylog_config_checker.py"]
 

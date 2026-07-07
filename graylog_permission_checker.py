@@ -64,35 +64,35 @@ def graylog_get(url, token, **kwargs):
 def get_user_permissions(host, token, username, debug):
     """
     Get user permissions from Graylog API
-    
+
     Args:
         host: Graylog host URL
         token: API token
         username: Username to check permissions for
         debug: Debug flag
-    
+
     Returns:
         Dictionary with user permissions
     """
     url = host + path_user_permissions.format(username=username)
-    
+
     if debug:
         print(f"Fetching permissions for user: {username}")
         print(f"URL: {url}")
-    
+
     response = graylog_get(url, token)
     permissions = response.json()
-    
+
     if debug:
         print(f"Raw response: {json.dumps(permissions, indent=2)}")
-    
+
     return permissions
 
 
 def save_file(data, filename):
     """
     Save data to file
-    
+
     Args:
         data: Data to save
         filename: Output filename
@@ -107,10 +107,10 @@ def main(args):
     parser.add_argument("--config", action="store", help="Configuration file", required=True)
     parser.add_argument("--username", action="store", help="Username to check permissions for", required=True)
     parser.add_argument("--save", action="store_true", help="Save output to file")
-    parser.add_argument("--output", action="store", 
+    parser.add_argument("--output", action="store",
                         help="Output filename (default: permissions-<username>-<graylog>.txt)",
                         default="")
-    parser.add_argument("--format", action="store", 
+    parser.add_argument("--format", action="store",
                         help="Output format: json, csv, or text (default: text)",
                         default="text",
                         choices=["json", "csv", "text"])
@@ -125,14 +125,14 @@ def main(args):
             if args.debug:
                 print(f"Checking permissions on graylog: {graylog}")
                 print(f"Host: {values['host']}")
-            
+
             permissions = get_user_permissions(
-                values["host"], 
-                values["token"], 
+                values["host"],
+                values["token"],
                 args.username,
                 args.debug
             )
-            
+
             # Display or save permissions
             if args.format == "json":
                 output_data = json.dumps(permissions, indent=2)
@@ -150,7 +150,7 @@ def main(args):
                 else:
                     output_data = f"User: {args.username}\nGraylog: {graylog}\n\nPermissions:\n"
                     output_data += "\n".join(f"  - {perm}" for perm in permissions)
-            
+
             if args.save:
                 # Determine output filename
                 if args.output:
@@ -158,7 +158,7 @@ def main(args):
                 else:
                     extension = {"json": "json", "csv": "csv", "text": "txt"}[args.format]
                     filename = f"permissions-{args.username}-{graylog}.{extension}"
-                
+
                 save_file(output_data, filename)
                 print(f"Permissions saved to: {filename}")
             else:
@@ -168,4 +168,3 @@ def main(args):
 
 if __name__ == "__main__":
     main(sys.argv)
-
