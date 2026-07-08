@@ -43,6 +43,22 @@ The project uses the following Python dependencies (see `requirements.txt`):
 - pandas
 - pyyaml
 
+## Development
+
+Linting is the only automated check (there is no unit test suite). Install the dev
+tooling into a local virtualenv and run flake8:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/flake8 .
+```
+
+`.flake8` sets a max line length of 120. On every push and pull request, CI
+(`.github/workflows/docker-build-push.yml`) lints the Dockerfile with **hadolint**
+and the Python code with **flake8**, then builds the image, pushes it to `ghcr.io`,
+and scans it with **Trivy**.
+
 ## Docker
 
 ### Building the Docker Image
@@ -218,8 +234,20 @@ Log in with `admin` / `<that generated password>` and complete the preflight wiz
 ```bash
 make create-token  # waits for the API, creates an API token, writes tests/config.yaml
 make seed          # creates random streams and users for testing
-make run           # runs graylog_config_checker.py against the local instance
+make run           # runs both checker scripts against the local instance (uses tests/.venv)
 ```
+
+To exercise the **Docker image** instead of the local venv, build it once and use
+`make run-image` (same checks, run inside the container with `--network host`):
+
+```bash
+make build-image   # builds graylog_config_checker:latest from the repo Dockerfile
+make run-image     # runs both checker scripts from the image against the local stack
+```
+
+> `--network host` is Linux-only; on Docker Desktop (macOS/Windows) point the config
+> `host` at `http://host.docker.internal:9000` and drop `--network host`. The `--save`
+> CSV is written to `tests/` owned by root, since the container runs as root.
 
 ### Subsequent runs
 
@@ -246,7 +274,9 @@ make create-token  Create API token and write tests/config.yaml
 make delete-token  Delete the test API token
 make show-config   Print generated tests/config.yaml
 make seed          Create random streams and users on the local instance
-make run           Run graylog_config_checker.py against the local instance
+make run           Run both checker scripts against the local instance (uses tests/.venv)
+make build-image   Build the Docker image (graylog_config_checker:latest)
+make run-image     Run both checker scripts from the Docker image (containerized make run)
 ```
 
 `make seed` (`tests/seed_data.py`) populates the instance with randomly named streams and users assigned a mix of built-in roles (`Reader`, `Views Manager`, `Alerts Manager`, `Dashboard Creator`, `Admin`), so both scripts have realistic, varied data to read.
